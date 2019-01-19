@@ -5,7 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const bodyParser = require('body-parser')
 
-const Book = require('./models').Book;
+const Book = require('./models').Book; //allows us to use the book model to use CRUD operations
 const db = require('./config/config');
 
 
@@ -34,7 +34,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 BEGIN ROUTES
 ******************/
 
-app.get('/', (req, res, next) =>{
+app.all('/', (req, res, next) =>{
   res.redirect('/books')
   });
 
@@ -55,12 +55,20 @@ app.get('/books/new', (req, res, next) => {
   res.render('new-book', {title: "New Book"});
 })
 
-app.get('/books/id', (req, res) => {
-  res.render('update-book')
+app.get('/books/:id', (req, res, next) => {
+  Book.findById(req.params.id).then(function(book) {
+    res.render('update-book', {book: book, id: req.params.id})
+  })
+})
+
+app.put('/books/4/edit', (req, res, next) => {
+  console.log("hi")
+  Book.findById(req.params.id).then(function(book) {
+    return book.update(req.body);
+}).then((book) => res.redirect('/books'));
 })
 
 // Post a new Book from a form
-console.log("hi")
 app.use(bodyParser.urlencoded({ extended: false }));
 
 //when i am on the "/books/new" route a form appears
@@ -92,7 +100,7 @@ app.post('/books/new', (req, res) => {
     });
 
   } else { //if the errors array does not have an error, then the form will create a new entry.
-    Book.create({
+    Book.create({ //maps the form inputs to the db instance
       title,
       author,
       genre,
@@ -102,13 +110,6 @@ app.post('/books/new', (req, res) => {
       .catch(err => console.log(err));
   }
 })
-
-
-
-
-
-
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
